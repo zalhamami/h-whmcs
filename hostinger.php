@@ -4,11 +4,17 @@ if (!defined("WHMCS")) die("This file cannot be accessed directly");
 require_once __DIR__ . '/vendor/autoload.php';
 
 use Hostinger\Api\BillingCatalogApi;
+use Hostinger\Api\BillingSubscriptionsApi;
 use Hostinger\Api\VPSDataCentersApi;
 use Hostinger\Api\VPSOSTemplatesApi;
+use Hostinger\Api\VPSVirtualMachineApi;
+use Hostinger\Model\BillingV1SubscriptionCancelRequest;
+use Hostinger\Model\VPSV1VirtualMachineSetupRequest;
 use Hostinger\WhmcsModule\Helper;
 use Hostinger\WhmcsModule\ServiceHelper;
 use Hostinger\WhmcsModule\Constants;
+use Hostinger\WhmcsModule\Services\BillingOrderService;
+use Hostinger\WhmcsModule\Services\VirtualMachineService;
 
 /**
  * Define module metadata for WHMCS.
@@ -97,25 +103,32 @@ function hostinger_LoadOsTemplates($params)
 function hostinger_CreateAccount($params)
 {
     try {
-        $apiClient    = Helper::getApiClient($params);
         $planPriceId  = $params['configoption1'];    // selected Plan price item ID
         $datacenterId = $params['configoption2'];    // selected Datacenter ID
         $templateId   = $params['configoption3'];    // selected OS template ID
-        $hostname     = $params['domain'] ?: 'vps' . $params['serviceid'];  // default hostname if none provided
+        $password     = $params['password'];
+        $hostname     = $params['domain'] ?: 'srv' . $params['serviceid'];  // default hostname if none provided
 
-        // Create the VPS instance via Hostinger API
-        $result = $apiClient->createVpsInstance($planPriceId, $datacenterId, $templateId, $hostname);
-        $vmId  = $result['vmId'];
-        $subId = $result['subscriptionId'];
+        $billingService = new BillingOrderService($params);
+        $order = $billingService->createOrder($planPriceId);
 
-        // Save the VM ID and subscription ID in WHMCS custom fields for this service
+        $vmService = new VirtualMachineService($params);
+        $setupVmRequest = new VPSV1VirtualMachineSetupRequest([
+            'templateId' => $templateId,
+            'hostname' => $hostname,
+            'datacenterId' => $datacenterId,
+            'password' => $password
+        ]);
+        $vm = $vmService->setupInstance($order['subscriptionId'], $setupVmRequest);
+
+        $vmId  = $vm['id'];
+        $subscriptionId = $vm['subscriptionId'];
+
         ServiceHelper::saveCustomFieldValue($params, Constants::CUSTOM_FIELD_VM_ID, $vmId);
-        ServiceHelper::saveCustomFieldValue($params, Constants::CUSTOM_FIELD_SUB_ID, $subId);
+        ServiceHelper::saveCustomFieldValue($params, Constants::CUSTOM_FIELD_SUB_ID, $subscriptionId);
     } catch (Exception $e) {
-        // Return a plain error string to WHMCS on failure
         return "CreateAccount error: " . $e->getMessage();
     }
-    // Return nothing (empty string) to indicate success
 }
 
 /**
@@ -124,18 +137,17 @@ function hostinger_CreateAccount($params)
 function hostinger_SuspendAccount($params)
 {
     try {
-        $apiClient = Helper::getApiClient($params);
-        // Retrieve the VM ID from custom fields
+        $apiClient = new VPSVirtualMachineApi(config: Helper::getApiConfig($params));
+
         $vmId = ServiceHelper::getCustomFieldValue($params, Constants::CUSTOM_FIELD_VM_ID);
         if (!$vmId) {
             return "No VM ID found for service";
         }
-        // Stop (power off) the VM via API
-        $apiClient->stopVirtualMachine($vmId);
+
+        $apiClient->stopVirtualMachineV1($vmId);
     } catch (Exception $e) {
         return "Suspend error: " . $e->getMessage();
     }
-    // On success, return nothing
 }
 
 /**
@@ -144,13 +156,14 @@ function hostinger_SuspendAccount($params)
 function hostinger_UnsuspendAccount($params)
 {
     try {
-        $apiClient = Helper::getApiClient($params);
+        $apiClient = new VPSVirtualMachineApi(config: Helper::getApiConfig($params));
+
         $vmId = ServiceHelper::getCustomFieldValue($params, Constants::CUSTOM_FIELD_VM_ID);
         if (!$vmId) {
             return "No VM ID found for service";
         }
-        // Start (power on) the VM via API
-        $apiClient->startVirtualMachine($vmId);
+
+        $apiClient->startVirtualMachineV1($vmId);
     } catch (Exception $e) {
         return "Unsuspend error: " . $e->getMessage();
     }
@@ -162,13 +175,19 @@ function hostinger_UnsuspendAccount($params)
 function hostinger_TerminateAccount($params)
 {
     try {
-        $apiClient = Helper::getApiClient($params);
+        $apiClient = new BillingSubscriptionsApi(config: Helper::getApiConfig($params));
+
         $subId = ServiceHelper::getCustomFieldValue($params, Constants::CUSTOM_FIELD_SUB_ID);
         if (!$subId) {
             return "No Subscription ID found for service";
         }
-        // Cancel the subscription on Hostinger (stops future billing and removes the VPS as per Hostinger policy)
-        $apiClient->cancelSubscription($subId);
+
+        $request = new BillingV1SubscriptionCancelRequest([
+            'reasonCode' => 'USER_REQUEST',
+            'cancelOption' => 'IMMEDIATE'
+        ]);
+
+        $apiClient->cancelSubscriptionV1($subId, $request);
     } catch (Exception $e) {
         return "Terminate error: " . $e->getMessage();
     }

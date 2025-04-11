@@ -4,6 +4,8 @@ if (!defined("WHMCS")) die("This file cannot be accessed directly");
 require_once __DIR__ . '/vendor/autoload.php';
 
 use Hostinger\Api\BillingCatalogApi;
+use Hostinger\Api\VPSDataCentersApi;
+use Hostinger\Api\VPSOSTemplatesApi;
 use Hostinger\WhmcsModule\Helper;
 use Hostinger\WhmcsModule\ServiceHelper;
 use Hostinger\WhmcsModule\Constants;
@@ -50,12 +52,11 @@ function hostinger_ConfigOptions($params)
 function hostinger_LoadPlans($params)
 {
     try {
-        $api = new BillingCatalogApi(config: )
-        $plans = $apiClient->getVpsPlans();
-        // Format options as key-value pairs (priceId => "PlanName - Term")
-        return Helper::formatPlanOptions($plans);
+        $apiClient = new BillingCatalogApi(config: Helper::getApiConfig($params));
+        $response = $apiClient->getCatalogItemListV1();
+
+        return Helper::getPlansFromResponse($response);
     } catch (Exception $e) {
-        // Throw an exception with a plain message (WHMCS will display it)
         throw new Exception("Failed to fetch VPS plans");
     }
 }
@@ -66,8 +67,9 @@ function hostinger_LoadPlans($params)
 function hostinger_LoadDatacenters($params)
 {
     try {
-        $apiClient = Helper::getApiClient($params);
-        $locations = $apiClient->getDataCenters();
+        $apiClient = new VPSDataCentersApi(config: Helper::getApiConfig($params));
+        $locations = $apiClient->getDataCentersListV1();
+
         return Helper::formatDatacenterOptions($locations);
     } catch (Exception $e) {
         throw new Exception("Failed to fetch datacenters");
@@ -80,8 +82,9 @@ function hostinger_LoadDatacenters($params)
 function hostinger_LoadOsTemplates($params)
 {
     try {
-        $apiClient = Helper::getApiClient($params);
-        $templates = $apiClient->getOsTemplates();
+        $apiClient = new VPSOSTemplatesApi(config: Helper::getApiConfig($params));
+        $templates = $apiClient->getTemplateListV1();
+
         return Helper::formatOsOptions($templates);
     } catch (Exception $e) {
         throw new Exception("Failed to fetch OS templates");

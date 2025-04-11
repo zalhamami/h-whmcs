@@ -61,7 +61,6 @@ class Helper
      */
     private static function decryptPassword($encryptedValue)
     {
-        // Use WHMCS built-in decrypt function if available
         if (function_exists('decrypt')) {
             try {
                 return decrypt($encryptedValue);
@@ -69,14 +68,13 @@ class Helper
                 // Fall back to localAPI if direct decrypt fails
             }
         }
-        // Attempt decryption via WHMCS localAPI as a fallback
         if (function_exists('localAPI')) {
             $response = localAPI('DecryptPassword', ['password2' => $encryptedValue]);
             if (!empty($response['password'])) {
                 return $response['password'];
             }
         }
-        // If decryption is not possible, return the original (encrypted) value
+        
         return $encryptedValue;
     }
 
@@ -87,15 +85,36 @@ class Helper
     {
         $options = [];
         foreach ($planList as $planOption) {
-            // Each $planOption has 'priceId', 'planName', 'period', 'periodUnit'
             $planName = $planOption['planName'];
             $period   = $planOption['period'];
             $unit     = $planOption['periodUnit'];
-            // Convert period/unit to a human-friendly term (e.g., 1 month vs 12 months)
+
             $termLabel = self::formatPeriod($period, $unit);
             $options[$planOption['priceId']] = "{$planName} - {$termLabel}";
         }
         return $options;
+    }
+
+    public static function getPlansFromResponse($response)
+    {
+        $planOptions = [];
+        foreach ($response as $item) {
+            if (!empty($item['category']) && strtoupper($item['category']) === 'VPS') {
+                $planName = $item['name'] ?? $item['id'];
+                if (!empty($item['prices']) && is_array($item['prices'])) {
+                    foreach ($item['prices'] as $priceItem) {
+                        $planOptions[] = [
+                            'priceId'    => $priceItem['id'],
+                            'planName'   => $planName,
+                            'period'     => $priceItem['period'] ?? 1,
+                            'periodUnit' => $priceItem['periodUnit'] ?? ''
+                        ];
+                    }
+                }
+            }
+        }
+
+        return self::formatPlanOptions($planOptions);
     }
 
     /**
@@ -105,7 +124,6 @@ class Helper
     {
         $options = [];
         foreach ($locations as $dc) {
-            // Each $dc has 'id', 'name' (code), 'city', 'location' (country code)
             $city    = !empty($dc['city']) ? $dc['city'] : $dc['name'];
             $country = !empty($dc['location']) ? strtoupper($dc['location']) : '';
             $label   = $country ? "{$city} ({$country})" : $city;

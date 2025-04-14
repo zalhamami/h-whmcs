@@ -37,6 +37,8 @@ class VirtualMachineService extends Service
             throw new Exception("VM is not found (subscription $subscriptionId)");
         }
 
-        return $this->apiClient->setupNewVirtualMachineV1($vm['id'], $setupVmRequest);
+        $this->apiClient->setupNewVirtualMachineV1($vm['id'], $setupVmRequest);
+
+        return $vm;
     }
 }

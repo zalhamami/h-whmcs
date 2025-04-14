@@ -5,6 +5,7 @@ namespace Hostinger\WhmcsModule\Services;
 use Exception;
 use Hostinger\Api\BillingOrdersApi;
 use Hostinger\Model\BillingV1OrderStoreRequest;
+use Hostinger\Model\BillingV1OrderStoreRequestItemsInner;
 use Hostinger\WhmcsModule\Helper;
 
 class BillingOrderService extends Service
@@ -24,14 +25,13 @@ class BillingOrderService extends Service
             $paymentMethodId = $paymentMethodService->getDefaultPaymentMethod();
         }
 
+        $item = new BillingV1OrderStoreRequestItemsInner([
+            'itemId' => $priceId,
+            'quantity' => 1
+        ]);
         $orderPayload = new BillingV1OrderStoreRequest([
-            'payment_method_id' => $paymentMethodId,
-            'items' => [
-                [
-                    'item_id'  => $priceId,
-                    'quantity' => 1
-                ]
-            ]
+            'paymentMethodId' => $paymentMethodId,
+            'items' => [$item],
         ]);
 
         $orderResult = $this->apiClient->createNewServiceOrderV1($orderPayload);

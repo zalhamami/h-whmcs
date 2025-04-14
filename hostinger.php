@@ -106,11 +106,12 @@ function hostinger_CreateAccount($params)
 {
     try {
         $planPriceId  = Helper::getConfigOptionWithFallback($params, Constants::CONFIG_LABEL_PLAN);
-        $datacenterId = Helper::getConfigOptionWithFallback($params, Constants::CONFIG_LABEL_DATACENTER);
-        $templateId   = Helper::getConfigOptionWithFallback($params, Constants::CONFIG_LABEL_OS);
+        // TODO fetch values dynamically
+        $datacenterId = 9;
+        $templateId   = 1013;
         $password     = $params['password'];
         $hostname     = $params['domain'] ?: 'srv' . $params['serviceid'];
-
+        
         $billingService = new BillingOrderService($params);
         $order = $billingService->createOrder($planPriceId);
 
@@ -118,7 +119,7 @@ function hostinger_CreateAccount($params)
         $setupVmRequest = new VPSV1VirtualMachineSetupRequest([
             'templateId' => $templateId,
             'hostname' => $hostname,
-            'datacenterId' => $datacenterId,
+            'dataCenterId' => $datacenterId,
             'password' => $password
         ]);
         $vm = $vmService->setupInstance($order['subscriptionId'], $setupVmRequest);

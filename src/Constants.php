@@ -12,4 +12,9 @@ class Constants
     // Custom field labels (for storing provisioned service info)
     const CUSTOM_FIELD_VM_ID  = 'Hostinger VM ID';
     const CUSTOM_FIELD_SUB_ID = 'Hostinger Subscription ID';
+    
+    /**
+     * WHMCS Configurable Option group label for Datacenter (used in Configurable Options)
+     */
+    const CONFIGURABLE_OPTION_GROUP = 'Hostinger Options';
 }

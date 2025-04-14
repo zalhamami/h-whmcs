@@ -164,4 +164,19 @@ class Helper
                 return "{$period} " . ucfirst($unit);
         }
     }
+
+    public static function getConfigOptionWithFallback($params, $label)
+    {
+        return $params['configoptions'][$label] ?? $params['configoption' . self::getConfigIndex($label)] ?? null;
+    }
+
+    private static function getConfigIndex($label)
+    {
+        $map = [
+            'Plan'        => 1,
+            'Datacenter'  => 2,
+            'OS Template' => 3
+        ];
+        return $map[$label] ?? null;
+    }
 }

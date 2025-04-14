@@ -37,18 +37,20 @@ function hostinger_ConfigOptions($params)
         Constants::CONFIG_LABEL_PLAN => [
             'Type'       => 'dropdown',
             'Loader'     => 'hostinger_LoadPlans',
-            'SimpleMode' => true
+            'SimpleMode' => true,
         ],
         Constants::CONFIG_LABEL_DATACENTER => [
             'Type'       => 'dropdown',
             'Loader'     => 'hostinger_LoadDatacenters',
-            'SimpleMode' => true
+            'SimpleMode' => true,
+            'Description' => 'Optional default',
         ],
         Constants::CONFIG_LABEL_OS => [
             'Type'       => 'dropdown',
             'Loader'     => 'hostinger_LoadOsTemplates',
-            'SimpleMode' => true
-        ]
+            'SimpleMode' => true,
+            'Description' => 'Optional default',
+        ],
     ];
 }
 
@@ -103,11 +105,11 @@ function hostinger_LoadOsTemplates($params)
 function hostinger_CreateAccount($params)
 {
     try {
-        $planPriceId  = $params['configoption1'];    // selected Plan price item ID
-        $datacenterId = $params['configoption2'];    // selected Datacenter ID
-        $templateId   = $params['configoption3'];    // selected OS template ID
+        $planPriceId  = Helper::getConfigOptionWithFallback($params, Constants::CONFIG_LABEL_PLAN);
+        $datacenterId = Helper::getConfigOptionWithFallback($params, Constants::CONFIG_LABEL_DATACENTER);
+        $templateId   = Helper::getConfigOptionWithFallback($params, Constants::CONFIG_LABEL_OS);
         $password     = $params['password'];
-        $hostname     = $params['domain'] ?: 'srv' . $params['serviceid'];  // default hostname if none provided
+        $hostname     = $params['domain'] ?: 'srv' . $params['serviceid'];
 
         $billingService = new BillingOrderService($params);
         $order = $billingService->createOrder($planPriceId);

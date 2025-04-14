@@ -337,12 +337,12 @@
             "source": {
                 "type": "git",
                 "url": "https://github.com/hostinger/api-php-sdk.git",
-                "reference": "b6e7f1e718c7ee3246469e5453a5ed9e7e5f46ee"
+                "reference": "145414001981daf1d176f0556bd0ac3b13ece0b3"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/hostinger/api-php-sdk/zipball/b6e7f1e718c7ee3246469e5453a5ed9e7e5f46ee",
-                "reference": "b6e7f1e718c7ee3246469e5453a5ed9e7e5f46ee",
+                "url": "https://api.github.com/repos/hostinger/api-php-sdk/zipball/145414001981daf1d176f0556bd0ac3b13ece0b3",
+                "reference": "145414001981daf1d176f0556bd0ac3b13ece0b3",
                 "shasum": ""
             },
             "require": {
@@ -390,10 +390,10 @@
                 "sdk"
             ],
             "support": {
-                "source": "https://github.com/hostinger/api-php-sdk/tree/v0.0.16",
+                "source": "https://github.com/hostinger/api-php-sdk/tree/v0.0.19",
                 "issues": "https://github.com/hostinger/api-php-sdk/issues"
             },
-            "time": "2025-04-14T05:00:22+00:00"
+            "time": "2025-04-14T10:33:13+00:00"
         },
         {
             "name": "psr/http-client",

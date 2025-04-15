@@ -1,10 +1,9 @@
 <?php
-namespace Hostinger\WhmcsModule;
+namespace Hostinger\WhmcsModule\Helpers;
 
 use WHMCS\Database\Capsule;
 
-
-class ServiceHelper
+class CustomFieldHelper
 {
     /**
      * Retrieve the value of a given custom field for a specific service.

@@ -1,5 +1,5 @@
 <?php
-namespace Hostinger\WhmcsModule;
+namespace Hostinger\WhmcsModule\Helpers;
 
 use WHMCS\Database\Capsule;
 use Exception;
@@ -7,36 +7,6 @@ use Hostinger\Configuration;
 
 class Helper
 {
-    /**
-     * Initialize the API client using credentials from the WHMCS server record.
-     */
-    public static function getApiClient($params)
-    {
-        // Get API base URL and token from the server record
-        list($apiUrl, $apiToken) = self::getApiCredentials($params['serverid']);
-        return new HostingerApiClient($apiUrl, $apiToken);
-    }
-
-    /**
-     * Retrieve and decrypt API credentials (base URL and token) from the WHMCS servers table.
-     */
-    public static function getApiCredentials($serverId)
-    {
-        // Fetch server record from database
-        $server = Capsule::table('tblservers')->find($serverId);
-        if (!$server) {
-            throw new Exception("Server credentials not found");
-        }
-        $apiUrl   = 'https://' . $server->hostname;
-        $encToken = $server->password;
-        // Decrypt the API token using WHMCS encryption
-        $apiToken = self::decryptPassword($encToken);
-        if (!$apiToken) {
-            throw new Exception("API token decryption failed");
-        }
-        return [$apiUrl, $apiToken];
-    }
-
     /**
      * Get the API configuration for the given server.
      */
@@ -178,5 +148,28 @@ class Helper
             'OS Template' => 3
         ];
         return $map[$label] ?? null;
+    }
+
+    /**
+     * Return action link
+     *
+     * @param $params
+     * @param $action
+     * @return string
+     */
+    public static function getActionLink($params, $action)
+    {
+        return "clientarea.php?action=productdetails&id={$params['serviceid']}&act={$action}";
+    }
+
+    /**
+     * Redirect user to URL
+     *
+     * @param $url
+     */
+    public static function redirect($url)
+    {
+        header("Location: {$url}");
+        exit();
     }
 }

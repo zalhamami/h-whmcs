@@ -10,11 +10,13 @@ use Hostinger\Api\VPSOSTemplatesApi;
 use Hostinger\Api\VPSVirtualMachineApi;
 use Hostinger\Model\BillingV1SubscriptionCancelRequest;
 use Hostinger\Model\VPSV1VirtualMachineSetupRequest;
-use Hostinger\WhmcsModule\Helper;
-use Hostinger\WhmcsModule\ServiceHelper;
+use WHMCS\Database\Capsule;
+use Hostinger\WhmcsModule\Helpers\Helper;
 use Hostinger\WhmcsModule\Constants;
 use Hostinger\WhmcsModule\Services\BillingOrderService;
+use Hostinger\WhmcsModule\Services\Service;
 use Hostinger\WhmcsModule\Services\VirtualMachineService;
+use Hostinger\WhmcsModule\Views\ClientAreaView;
 
 /**
  * Define module metadata for WHMCS.
@@ -127,8 +129,13 @@ function hostinger_CreateAccount($params)
         $vmId  = $vm['id'];
         $subscriptionId = $vm['subscriptionId'];
 
-        ServiceHelper::saveCustomFieldValue($params, Constants::CUSTOM_FIELD_VM_ID, $vmId);
-        ServiceHelper::saveCustomFieldValue($params, Constants::CUSTOM_FIELD_SUB_ID, $subscriptionId);
+        Capsule::table(Constants::HOSTINGER_TABLE)->insert([
+            'hservice_id' => $vmId,
+            'subscription_id' => $subscriptionId,
+            'whmcs_service_id' => $params['serviceid'],
+            'details' => json_encode($vm),
+            'updated_at' => date('Y-m-d H:i:s', time())
+        ]);
     } catch (Exception $e) {
         return "CreateAccount error: " . $e->getMessage();
     }
@@ -141,13 +148,14 @@ function hostinger_SuspendAccount($params)
 {
     try {
         $apiClient = new VPSVirtualMachineApi(config: Helper::getApiConfig($params));
+        $service = new Service($params);
 
-        $vmId = ServiceHelper::getCustomFieldValue($params, Constants::CUSTOM_FIELD_VM_ID);
-        if (!$vmId) {
+        $result = $service->getService($params['serviceid']);
+        if (!$result->hservice_id) {
             return "No VM ID found for service";
         }
 
-        $apiClient->stopVirtualMachineV1($vmId);
+        $apiClient->stopVirtualMachineV1($result->hservice_id);
     } catch (Exception $e) {
         return "Suspend error: " . $e->getMessage();
     }
@@ -160,13 +168,14 @@ function hostinger_UnsuspendAccount($params)
 {
     try {
         $apiClient = new VPSVirtualMachineApi(config: Helper::getApiConfig($params));
+        $service = new Service($params);
 
-        $vmId = ServiceHelper::getCustomFieldValue($params, Constants::CUSTOM_FIELD_VM_ID);
-        if (!$vmId) {
+        $result = $service->getService($params['serviceid']);
+        if (!$result->hservice_id) {
             return "No VM ID found for service";
         }
 
-        $apiClient->startVirtualMachineV1($vmId);
+        $apiClient->startVirtualMachineV1($result->hservice_id);
     } catch (Exception $e) {
         return "Unsuspend error: " . $e->getMessage();
     }
@@ -180,8 +189,9 @@ function hostinger_TerminateAccount($params)
     try {
         $apiClient = new BillingSubscriptionsApi(config: Helper::getApiConfig($params));
 
-        $subId = ServiceHelper::getCustomFieldValue($params, Constants::CUSTOM_FIELD_SUB_ID);
-        if (!$subId) {
+        $service = new Service($params);
+        $result = $service->getService($params['serviceid']);
+        if (!$result->subscription_id) {
             return "No Subscription ID found for service";
         }
 
@@ -190,8 +200,36 @@ function hostinger_TerminateAccount($params)
             'cancelOption' => 'IMMEDIATE'
         ]);
 
-        $apiClient->cancelSubscriptionV1($subId, $request);
+        $apiClient->cancelSubscriptionV1($result->subscription_id, $request);
     } catch (Exception $e) {
         return "Terminate error: " . $e->getMessage();
     }
+}
+
+/**
+ * Show Client Area
+ *
+ * @param $params
+ * @return array|string
+ */
+function hostinger_ClientArea($params)
+{
+    $view = new ClientAreaView();
+
+    return $view->render($params);
+}
+
+
+/**
+ * Custom Admin Area Buttons
+ *
+ * @return array
+ */
+function hostinger_AdminCustomButtonArray($params)
+{
+    $vmService = new VirtualMachineService($params);
+
+    return [
+        'Update Details' => $vmService->getVmDetails($params)
+    ];
 }

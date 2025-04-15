@@ -6,7 +6,7 @@ use Exception;
 use Hostinger\Api\BillingOrdersApi;
 use Hostinger\Model\BillingV1OrderStoreRequest;
 use Hostinger\Model\BillingV1OrderStoreRequestItemsInner;
-use Hostinger\WhmcsModule\Helper;
+use Hostinger\WhmcsModule\Helpers\Helper;
 
 class BillingOrderService extends Service
 {
@@ -35,7 +35,7 @@ class BillingOrderService extends Service
         ]);
 
         $orderResult = $this->apiClient->createNewServiceOrderV1($orderPayload);
-        if (empty($orderResult['subscriptionId'])) {
+        if (empty($orderResult->getSubscriptionId())) {
             throw new Exception("Failed to create VPS subscription");
         }
 

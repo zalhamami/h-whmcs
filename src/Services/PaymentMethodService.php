@@ -4,7 +4,7 @@ namespace Hostinger\WhmcsModule\Services;
 
 use Exception;
 use Hostinger\Api\BillingPaymentMethodsApi;
-use Hostinger\WhmcsModule\Helper;
+use Hostinger\WhmcsModule\Helpers\Helper;
 
 class PaymentMethodService extends Service
 {
